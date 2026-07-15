@@ -1,0 +1,7 @@
+from enum import Enum
+
+
+class EstadoLiquidacion(str, Enum):
+    PENDIENTE_COBRO = "PENDIENTE_COBRO"
+    PARCIALMENTE_COBRADA = "PARCIALMENTE_COBRADA"
+    COBRADA = "COBRADA"
