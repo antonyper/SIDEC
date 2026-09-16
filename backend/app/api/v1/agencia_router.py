@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.core.auth_dependencies import get_current_user
 from app.db.dependencies import get_db
 from app.repositories.agencia_repository import AgenciaRepository
 from app.schemas.agencia_schema import AgenciaCreate, AgenciaResponse, AgenciaListResponse, AgenciaUpdate
@@ -11,6 +12,7 @@ from app.enums.estado import Estado
 router = APIRouter(
     prefix="/agencias",
     tags=["Agencias"],
+    dependencies=[Depends(get_current_user)],
 )
 
 @router.post(

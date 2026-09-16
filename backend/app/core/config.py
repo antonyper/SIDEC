@@ -13,6 +13,9 @@ class Settings(BaseSettings):
 
     DATABASE_ECHO: bool = False
 
+    SECRET_KEY: str = "cambia-esta-clave-en-produccion"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,

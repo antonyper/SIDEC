@@ -15,6 +15,7 @@ from app.models.liquidacion import Liquidacion
 from app.models.detalle_liquidacion import DetalleLiquidacion
 from app.models.cobranza import Cobranza
 from app.models.movimiento_inventario import MovimientoInventario
+from app.models.usuario import Usuario
 
 
 # this is the Alembic Config object, which provides

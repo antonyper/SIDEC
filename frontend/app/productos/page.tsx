@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useAuth } from "@/components/auth/AuthContext";
 import {
   actualizarProducto,
   ApiError,
@@ -22,6 +23,8 @@ type Vista = "lista" | "formulario";
 const FORM_VACIO: ProductoInput = { nombre: "", categoria: "", precio: undefined };
 
 export default function ProductosPage() {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "ADMIN";
   const [vista, setVista] = useState<Vista>("lista");
   const [productos, setProductos] = useState<ProductoListItem[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -199,9 +202,11 @@ export default function ProductosPage() {
         subtitle={`${productos.length} registrados`}
         actions={
           <>
-            <Link href="/reportes/por-producto" className="btn btn-ghost">
-              Ver reporte
-            </Link>
+            {esAdmin && (
+              <Link href="/reportes/por-producto" className="btn btn-ghost">
+                Ver reporte
+              </Link>
+            )}
             <button type="button" className="btn" onClick={abrirNuevoProducto}>
               + Nuevo producto
             </button>

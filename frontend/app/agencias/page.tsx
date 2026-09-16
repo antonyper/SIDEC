@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useAuth } from "@/components/auth/AuthContext";
 import {
   actualizarAgencia,
   ApiError,
@@ -27,6 +28,8 @@ const FORM_VACIO: AgenciaInput = {
 };
 
 export default function AgenciasPage() {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "ADMIN";
   const [vista, setVista] = useState<Vista>("lista");
   const [agencias, setAgencias] = useState<AgenciaListItem[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -197,9 +200,11 @@ export default function AgenciasPage() {
         subtitle={`${agencias.length} registradas`}
         actions={
           <>
-            <Link href="/reportes/desempeno-agencias" className="btn btn-ghost">
-              Ver reporte
-            </Link>
+            {esAdmin && (
+              <Link href="/reportes/desempeno-agencias" className="btn btn-ghost">
+                Ver reporte
+              </Link>
+            )}
             <button type="button" className="btn" onClick={abrirNuevaAgencia}>
               + Nueva agencia
             </button>

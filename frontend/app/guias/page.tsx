@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
+import { useAuth } from "@/components/auth/AuthContext";
 import { ApiError } from "@/lib/http";
 import { ESTADO_GUIA_BADGE, ESTADO_GUIA_LABEL, listarGuias, type EstadoGuia, type Guia } from "@/lib/guias";
 import { listarAgencias, type AgenciaListItem } from "@/lib/agencias";
 
 export default function GuiasPage() {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "ADMIN";
   const [guias, setGuias] = useState<Guia[]>([]);
   const [agencias, setAgencias] = useState<AgenciaListItem[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -44,12 +47,16 @@ export default function GuiasPage() {
         subtitle={`${guias.length} registradas`}
         actions={
           <>
-            <Link href="/reportes/dashboard-cobranza" className="btn btn-ghost">
-              Dashboard de cobranza
-            </Link>
-            <Link href="/reportes/detalle-por-agencia" className="btn btn-ghost">
-              Detalle por agencia
-            </Link>
+            {esAdmin && (
+              <>
+                <Link href="/reportes/dashboard-cobranza" className="btn btn-ghost">
+                  Dashboard de cobranza
+                </Link>
+                <Link href="/reportes/detalle-por-agencia" className="btn btn-ghost">
+                  Detalle por agencia
+                </Link>
+              </>
+            )}
             <Link href="/guias/nueva" className="btn">
               + Nueva guía
             </Link>

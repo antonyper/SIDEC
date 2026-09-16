@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
+from app.core.auth_dependencies import get_current_user, require_admin
 from app.db.dependencies import get_db
 from app.enums.tipo_movimiento_inventario import TipoMovimientoInventario
 from app.models.movimiento_inventario import MovimientoInventario
@@ -13,7 +14,7 @@ from app.schemas.inventario_schema import (
     MovimientoInventarioUpdate,
 )
 
-router = APIRouter(prefix="/inventario", tags=["Inventario"])
+router = APIRouter(prefix="/inventario", tags=["Inventario"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[InventarioItemResponse])
@@ -56,7 +57,7 @@ def get_movimientos_por_producto(producto_id: int, db: Session = Depends(get_db)
     ).all()
 
 
-@router.post("/movimientos", status_code=status.HTTP_201_CREATED)
+@router.post("/movimientos", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
 def create_movimiento(
     movimiento: MovimientoInventarioCreate,
     db: Session = Depends(get_db),
@@ -84,7 +85,7 @@ def create_movimiento(
     return {"id": registro.id}
 
 
-@router.put("/movimientos/{movimiento_id}", response_model=MovimientoInventarioResponse)
+@router.put("/movimientos/{movimiento_id}", response_model=MovimientoInventarioResponse, dependencies=[Depends(require_admin)])
 def update_movimiento(
     movimiento_id: int,
     movimiento: MovimientoInventarioUpdate,

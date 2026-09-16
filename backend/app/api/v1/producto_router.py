@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.core.auth_dependencies import get_current_user
 from app.db.dependencies import get_db
 from app.repositories.producto_repository import ProductoRepository
 from app.schemas.producto_schema import ProductoCreate, ProductoResponse, ProductoListResponse, ProductoUpdate
@@ -11,6 +12,7 @@ from app.enums.estado import Estado
 router = APIRouter(
     prefix="/productos",
     tags=["Productos"],
+    dependencies=[Depends(get_current_user)],
 )
 
 @router.post(

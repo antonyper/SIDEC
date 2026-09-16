@@ -1,8 +1,45 @@
+const TOKEN_KEY = "sidec_token";
+
 export class ApiError extends Error {}
+
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setToken(token: string): void {
+  try {
+    window.localStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    // almacenamiento no disponible, la sesión no persistirá al recargar
+  }
+}
+
+export function clearToken(): void {
+  try {
+    window.localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // almacenamiento no disponible
+  }
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export async function parseResponse<T>(res: Response): Promise<T> {
   if (res.ok) {
     return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
+  }
+
+  if (res.status === 401 && typeof window !== "undefined") {
+    clearToken();
+    window.dispatchEvent(new Event("sidec:auth-expired"));
   }
 
   let mensaje = `Error ${res.status}`;
@@ -35,7 +72,7 @@ export function buildQuery(params: Record<string, string | number | undefined>):
 }
 
 export function apiGet<T>(path: string): Promise<T> {
-  return fetch(`/api${path}`).then((res) => parseResponse<T>(res));
+  return fetch(`/api${path}`, { headers: authHeaders() }).then((res) => parseResponse<T>(res));
 }
 
 export function apiSend<T>(
@@ -45,7 +82,10 @@ export function apiSend<T>(
 ): Promise<T> {
   return fetch(`/api${path}`, {
     method,
-    headers: data !== undefined ? { "Content-Type": "application/json" } : undefined,
+    headers: {
+      ...authHeaders(),
+      ...(data !== undefined ? { "Content-Type": "application/json" } : {}),
+    },
     body: data !== undefined ? JSON.stringify(data) : undefined,
   }).then((res) => parseResponse<T>(res));
 }

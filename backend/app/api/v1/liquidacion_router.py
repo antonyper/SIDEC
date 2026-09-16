@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth_dependencies import get_current_user
 from app.repositories.guia_repository import GuiaRepository
 from app.db.dependencies import get_db
 from app.repositories.liquidacion_repository import LiquidacionRepository
@@ -17,7 +18,8 @@ from app.schemas.liquidacion_schema import (
 
 router = APIRouter(
     prefix="/liquidaciones",
-    tags=["Liquidaciones"]
+    tags=["Liquidaciones"],
+    dependencies=[Depends(get_current_user)],
 )
 
 

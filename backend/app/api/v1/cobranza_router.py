@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 
+from app.core.auth_dependencies import get_current_user
 from app.db.dependencies import get_db
 from app.repositories.cobranza_repository import CobranzaRepository
 from app.schemas.cobranza_schema import (
@@ -13,7 +14,8 @@ from app.services.cobranza_service import CobranzaService
 
 router = APIRouter(
     prefix="/cobranzas",
-    tags=["Cobranzas"]
+    tags=["Cobranzas"],
+    dependencies=[Depends(get_current_user)],
 )
 
 

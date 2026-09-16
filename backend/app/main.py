@@ -12,6 +12,8 @@ from app.api.v1.liquidacion_router import router as liquidacion_router
 from app.api.v1.cobranza_router import router as cobranza_router
 from app.api.v1.inventario_router import router as inventario_router
 from app.api.v1.reporte_router import router as reporte_router
+from app.api.v1.auth_router import router as auth_router
+from app.api.v1.usuario_router import router as usuario_router
 from app.db.session import SessionLocal
 from app.repositories.guia_repository import GuiaRepository
 
@@ -42,6 +44,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 register_exception_handlers(app)
+app.include_router(auth_router)
+app.include_router(usuario_router)
 app.include_router(agencia_router)
 app.include_router(producto_router)
 app.include_router(guia_router)

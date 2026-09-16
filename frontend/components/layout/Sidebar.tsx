@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthContext";
 import { NAV_ITEMS } from "./nav-items";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { usuario, logout } = useAuth();
+
+  const items = NAV_ITEMS.filter((item) => !item.roles || (usuario && item.roles.includes(usuario.rol)));
 
   return (
     <aside className="sidebar">
@@ -17,7 +21,7 @@ export default function Sidebar() {
         </span>
       </Link>
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
             <Link
@@ -32,6 +36,15 @@ export default function Sidebar() {
           );
         })}
       </nav>
+      <div className="sidebar-user">
+        <div className="sidebar-user-info">
+          <strong>{usuario?.nombre}</strong>
+          <span>{usuario?.rol === "ADMIN" ? "Administrador" : "Operador"}</span>
+        </div>
+        <button type="button" className="sidebar-logout" onClick={logout}>
+          Cerrar sesión
+        </button>
+      </div>
       <p className="sidebar-foot">v1.0 · uso interno</p>
     </aside>
   );

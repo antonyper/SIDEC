@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
+from app.core.auth_dependencies import require_admin
 from app.db.dependencies import get_db
 from app.enums.estado_guia import EstadoGuia
 from app.repositories.reporte_repository import ReporteRepository
@@ -24,7 +25,7 @@ from app.schemas.reporte_schema import (
     TopAgenciaProductoItem,
 )
 
-router = APIRouter(prefix="/reportes", tags=["Reportes"])
+router = APIRouter(prefix="/reportes", tags=["Reportes"], dependencies=[Depends(require_admin)])
 
 
 def get_repository(db: Session = Depends(get_db)) -> ReporteRepository:
