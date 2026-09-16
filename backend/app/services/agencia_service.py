@@ -2,7 +2,7 @@ from app.models.agencia import Agencia
 from app.repositories.agencia_repository import AgenciaRepository
 from app.schemas.agencia_schema import AgenciaCreate, AgenciaResponse, AgenciaListResponse, AgenciaUpdate
 from app.domain.exceptions.agencia_exception import AgenciaNotFoundException, AgenciaCodigoDuplicadoException
-
+from app.enums.estado import Estado
 
 class AgenciaService:
 
@@ -17,11 +17,15 @@ class AgenciaService:
     def create(self, data: AgenciaCreate) -> AgenciaResponse:
         
         agencia = Agencia(
-            codigo=self._generar_codigo(),
+            codigo=self.repository.generar_codigo(),
             nombre=data.nombre,
             propietario=data.propietario,
+            agente=data.agente,
             telefono=data.telefono,
             direccion=data.direccion,
+            ruta=data.ruta,
+            latitud=data.latitud,
+            longitud=data.longitud,
         )
         agencia = self.repository.create(agencia)
         return AgenciaResponse.model_validate(agencia)
@@ -59,11 +63,23 @@ class AgenciaService:
         if not agencia:
             raise AgenciaNotFoundException()
 
-        agencia.nombre = data.nombre or agencia.nombre
-        agencia.propietario = data.propietario or agencia.propietario
-        agencia.agente = data.agente or agencia.agente
-        agencia.telefono = data.telefono or agencia.telefono
-        agencia.direccion = data.direccion or agencia.direccion 
+        if data.nombre:
+            agencia.nombre = data.nombre
+
+        if data.propietario is not None:
+            agencia.propietario = data.propietario or None
+        if data.agente is not None:
+            agencia.agente = data.agente or None
+        if data.telefono is not None:
+            agencia.telefono = data.telefono or None
+        if data.direccion is not None:
+            agencia.direccion = data.direccion or None
+        if data.ruta is not None:
+            agencia.ruta = data.ruta or None
+        if data.latitud is not None:
+            agencia.latitud = data.latitud
+        if data.longitud is not None:
+            agencia.longitud = data.longitud
 
         agencia = self.repository.update(agencia)
         return AgenciaResponse.model_validate(agencia)

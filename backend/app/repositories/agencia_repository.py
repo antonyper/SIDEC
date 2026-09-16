@@ -44,6 +44,19 @@ class AgenciaRepository:
         self.db.refresh(agencia)
         return agencia
 
+    def generar_codigo(self) -> str:
+        statement = (
+            select(Agencia)
+            .order_by(Agencia.id.desc())
+        )
+        last_agencia = self.db.scalar(statement)
+        if last_agencia:
+            last_id = int(last_agencia.codigo[1:])
+            last_id = last_id + 1
+        else:
+            last_id = 1
+        return f"A{last_id:03d}"
+
     # def update_agencia(self, agencia: Agencia) -> Agencia:
     #     self.db.commit()
     #     self.db.refresh(agencia)

@@ -1,26 +1,331 @@
 @import "tailwindcss";
 
+/* ==========================================================
+   Design tokens
+   ========================================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --blue: #1f7a3d;
+  --blue-dark: #14532a;
+  --blue-light: #e3f5e9;
+  --ink: #16213b;
+  --muted: #5b6b8c;
+  --line: #dfe6f4;
+  --bg: #f3f6fc;
+  --surface: #ffffff;
+  --ok-bg: #e9fbf5;
+  --ok-fg: #168264;
+  --off-bg: #fdecec;
+  --off-fg: #b3261e;
+  --warn-bg: #fff3dd;
+  --warn-fg: #a3620a;
+  --info-bg: #e3f5e9;
+  --info-fg: #1f7a3d;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --sidebar-w: 264px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+* { box-sizing: border-box; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html { color-scheme: light; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 18px/1.5 Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+h1 { font-size: 30px; letter-spacing: -0.02em; margin: 0; }
+h2 { font-size: 22px; margin: 0 0 4px; }
+p { margin: 0; }
+
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ==========================================================
+   App shell (sidebar + content)
+   ========================================================== */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: var(--sidebar-w);
+  flex: 0 0 var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+}
+.sidebar-brand i {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #34a35f, var(--blue-dark));
+  color: #fff;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 14px;
+}
+.sidebar-brand strong { display: block; font-size: 20px; font-weight: 800; }
+.sidebar-brand span { display: block; font-size: 13px; color: var(--muted); }
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.sidebar-link b {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-size: 18px;
+  color: var(--muted);
+}
+.sidebar-link:hover { background: var(--bg); }
+.sidebar-link.active { background: var(--blue-light); color: var(--blue-dark); }
+.sidebar-link.active b { color: var(--blue-dark); }
+
+.sidebar-foot {
+  margin-top: auto;
+  padding: 12px 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.content { flex: 1; min-width: 0; }
+
+.topbar {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.topbar h1 { font-size: 24px; }
+.topbar .crumb { font-size: 14px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+
+.page { width: min(1180px, 100%); margin: 0 auto; padding: 28px 32px 60px; }
+
+/* ==========================================================
+   Home dashboard
+   ========================================================== */
+.hero { margin-bottom: 26px; }
+.hero p { color: var(--blue); font-size: 14px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+.hero span { color: var(--muted); font-size: 17px; }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.module {
+  min-height: 168px;
+  padding: 22px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  box-shadow: 0 10px 28px #1453200a;
+  transition: transform .16s, box-shadow .16s, border-color .16s;
+  display: block;
+}
+.module:hover, .module:focus-visible { transform: translateY(-3px); border-color: #a8d9bc; box-shadow: 0 16px 32px #14532017; }
+.module b { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--blue-light); color: var(--blue); font-size: 26px; margin-bottom: 18px; }
+.module strong { display: block; font-size: 21px; }
+.module small { display: block; color: var(--muted); margin-top: 6px; font-size: 15px; }
+
+/* ==========================================================
+   Buttons
+   ========================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  font-weight: 700;
+  font-size: 16px;
+  min-height: 46px;
+  background: var(--blue);
+  color: #fff;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--blue-dark); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-secondary { background: var(--blue-light); color: var(--blue-dark); }
+.btn-secondary:hover { background: #d3f0dd; }
+.btn-danger { background: var(--off-bg); color: var(--off-fg); }
+.btn-danger:hover { background: #fbdada; }
+.btn-ghost { background: transparent; color: var(--blue); padding: 10px 12px; min-height: auto; }
+.btn-sm { padding: 8px 12px; min-height: 38px; font-size: 14px; }
+.btn-back { background: var(--blue-light); color: var(--blue); border-radius: 10px; font-weight: 700; padding: 10px 14px; margin-bottom: 20px; }
+
+/* ==========================================================
+   Forms
+   ========================================================== */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-weight: 700; font-size: 14px; color: var(--muted); }
+.input, select.input, textarea.input {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  background: var(--surface);
+  color: var(--ink);
+  min-height: 46px;
+}
+textarea.input { min-height: 90px; resize: vertical; }
+.input:focus { border-color: var(--blue); }
+.form-grid { display: grid; gap: 16px; max-width: 560px; }
+.form-grid.cols-2 { grid-template-columns: 1fr 1fr; max-width: 720px; }
+.form-actions { display: flex; gap: 10px; margin-top: 8px; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+.toolbar .input { min-width: 200px; flex: 1; }
+.toolbar-spacer { flex: 1; }
+
+/* ==========================================================
+   Cards / banners
+   ========================================================== */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+.error-banner { background: var(--off-bg); color: var(--off-fg); border: 1px solid #f5c6c6; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; font-size: 15px; font-weight: 600; }
+.empty-state { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 16px; }
+
+/* ==========================================================
+   Table
+   ========================================================== */
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; font-size: 15.5px; }
+th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; background: #fafcf8; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #fafcf8; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.row-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.lineas-table th, .lineas-table td { padding: 10px 8px; overflow: hidden; }
+.lineas-table .input { width: 100%; min-width: 0; box-sizing: border-box; }
+
+/* ==========================================================
+   Badges
+   ========================================================== */
+.badge { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.badge-ok { background: var(--ok-bg); color: var(--ok-fg); }
+.badge-off { background: var(--off-bg); color: var(--off-fg); }
+.badge-warn { background: var(--warn-bg); color: var(--warn-fg); }
+.badge-info { background: var(--info-bg); color: var(--info-fg); }
+
+/* ==========================================================
+   Stats (dashboard / reportes)
+   ========================================================== */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+.stat-card span { display: block; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.stat-card strong { font-size: 28px; letter-spacing: -.02em; }
+
+/* ==========================================================
+   Reports index
+   ========================================================== */
+.report-group { margin-bottom: 30px; }
+.report-group h2 { margin-bottom: 14px; }
+.report-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.report-link {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.report-link:hover { border-color: #a8d9bc; }
+.report-link strong { display: block; font-size: 17px; margin-bottom: 4px; }
+.report-link small { color: var(--muted); font-size: 14px; }
+.report-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--info-bg);
+  color: var(--info-fg);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* ==========================================================
+   Modal (confirm dialogs)
+   ========================================================== */
+dialog.modal {
+  border: none;
+  border-radius: var(--radius);
+  padding: 0;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px #16213b33;
+  position: fixed;
+  inset: 0;
+  margin: auto;
+}
+dialog.modal::backdrop { background: #16213b66; }
+.modal-body { padding: 26px; }
+.modal-body h2 { margin-bottom: 10px; }
+.modal-body p { color: var(--muted); margin-bottom: 20px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* ==========================================================
+   Responsive
+   ========================================================== */
+@media (max-width: 900px) {
+  .app-shell { flex-direction: column; }
+  .sidebar { position: static; width: 100%; height: auto; flex-direction: row; overflow-x: auto; align-items: center; }
+  .sidebar-nav { flex-direction: row; }
+  .sidebar-foot { display: none; }
+  .page { padding: 22px 18px 50px; }
+  .grid { grid-template-columns: 1fr; }
+  .form-grid.cols-2 { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================
+   Impresión / descarga como PDF
+   ========================================================== */
+@media print {
+  .sidebar, .row-actions, .toolbar { display: none !important; }
+  .app-shell { display: block; }
+  .page { width: 100%; padding: 0; }
+  .card, .table-wrap { break-inside: avoid; box-shadow: none; }
 }

@@ -196,15 +196,15 @@ Se debe permitir:
 Una guía puede encontrarse en alguno de los siguientes estados durante su ciclo de vida:
 
 * **Pendiente:** la guía ha sido emitida y los productos fueron entregados a la agencia.
-* **Pendiente de Liquidación:** han transcurrido 25 días desde la fecha de emisión de la guía y la agencia debe ser contactada para coordinar la visita de liquidación.
+* **Pendiente de Liquidación:** han transcurrido más de 30 días desde la creación de la guía y la agencia debe ser contactada para coordinar la visita de liquidación.
 * **Parcialmente Liquidada:** una parte de los productos de la guía ya fue liquidada, pero aún existen productos pendientes.
 * **Liquidada:** todos los productos de la guía fueron liquidados.
 * **Anulada:** la guía fue anulada y no forma parte del proceso operativo.
 
 ### Reglas de Negocio
 
-* Una guía permanecerá en estado **Pendiente** desde su creación hasta cumplir 25 días.
-* Al cumplirse 25 días desde su emisión, el sistema cambiará automáticamente su estado a **Pendiente de Liquidación**, siempre que aún existan productos pendientes de liquidar.
+* Una guía permanecerá en estado **Pendiente** durante los primeros 30 días desde su creación.
+* Al superar 30 días desde su creación, el sistema cambiará automáticamente su estado a **Pendiente de Liquidación**, siempre que aún existan productos pendientes de liquidar.
 * Cuando todos los productos de la guía hayan sido liquidados, el estado cambiará automáticamente a **Liquidada**.
 * Si solo una parte de los productos ha sido liquidada, el estado será **Parcialmente Liquidada**.
 

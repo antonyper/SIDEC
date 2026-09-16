@@ -1,6 +1,12 @@
+from decimal import Decimal
+
 from app.schemas.base_schema import BaseSchema
 from datetime import datetime
 from app.enums.estado import Estado
+
+# ==========================
+# Commands
+# ==========================
 
 class AgenciaCreate(BaseSchema):
     nombre: str
@@ -8,6 +14,23 @@ class AgenciaCreate(BaseSchema):
     agente: str | None = None
     telefono: str | None = None
     direccion: str | None = None
+    ruta: str | None = None
+    latitud: Decimal | None = None
+    longitud: Decimal | None = None
+
+class AgenciaUpdate(BaseSchema):
+    nombre: str | None = None
+    propietario: str | None = None
+    agente: str | None = None
+    telefono: str | None = None
+    direccion: str | None = None
+    ruta: str | None = None
+    latitud: Decimal | None = None
+    longitud: Decimal | None = None
+
+# ==========================
+# Queries
+# ==========================
 
 class AgenciaResponse(BaseSchema):
     id: int
@@ -17,6 +40,9 @@ class AgenciaResponse(BaseSchema):
     agente: str | None = None
     telefono: str | None = None
     direccion: str | None = None
+    ruta: str | None = None
+    latitud: Decimal | None = None
+    longitud: Decimal | None = None
     estado: Estado
     created_at: datetime
     updated_at: datetime
@@ -28,11 +54,6 @@ class AgenciaListResponse(BaseSchema):
     propietario: str | None = None
     agente: str | None = None
     telefono: str | None = None
+    ruta: str | None = None
     estado: Estado
 
-class AgenciaUpdate(BaseSchema):
-    nombre: str | None = None
-    propietario: str | None = None
-    agente: str | None = None
-    telefono: str | None = None
-    direccion: str | None = None

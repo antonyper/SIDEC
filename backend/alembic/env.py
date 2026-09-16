@@ -8,6 +8,14 @@ from alembic import context
 from app.core.config import settings
 from app.db.base import Base
 from app.models.agencia import Agencia
+from app.models.producto import Producto
+from app.models.guia import Guia
+from app.models.detalle_guia import DetalleGuia
+from app.models.liquidacion import Liquidacion
+from app.models.detalle_liquidacion import DetalleLiquidacion
+from app.models.cobranza import Cobranza
+from app.models.movimiento_inventario import MovimientoInventario
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
