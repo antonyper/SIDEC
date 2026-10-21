@@ -25,15 +25,18 @@ class GuiaService:
     def actualizar_guias_pendientes_vencidas(self) -> int:
         return self.repository.actualizar_guias_pendientes_vencidas()
 
-    def create(self, guia_data: GuiaCreate):
+    def get_siguiente_numero(self) -> str:
         ultimo = self.repository.get_last()
+        numero = int(ultimo.numero_guia[1:]) + 1 if ultimo else 1
+        return f"G{numero:06d}"
 
-        if ultimo:
-            numero = int(ultimo.numero_guia[1:]) + 1
-        else:
-            numero = 1
+    def create(self, guia_data: GuiaCreate):
+        numero_guia = guia_data.numero_guia or self.get_siguiente_numero()
 
-        numero_guia = f"G{numero:06d}"
+        if self.repository.get_by_numero_guia(numero_guia):
+            raise ValueError(
+                f"Ya existe una guía con el número '{numero_guia}'."
+            )
 
         return self.repository.create(
             guia_data=guia_data,

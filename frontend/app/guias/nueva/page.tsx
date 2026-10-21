@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import PageHeader from "@/components/ui/PageHeader";
 import { ApiError } from "@/lib/http";
-import { crearGuia, type DetalleGuiaInput } from "@/lib/guias";
+import { crearGuia, obtenerSiguienteNumeroGuia, type DetalleGuiaInput } from "@/lib/guias";
 import { listarAgencias, type AgenciaListItem } from "@/lib/agencias";
 import { listarProductos, type ProductoListItem } from "@/lib/productos";
 
@@ -25,6 +25,7 @@ export default function NuevaGuiaPage() {
   const router = useRouter();
   const [agencias, setAgencias] = useState<AgenciaListItem[]>([]);
   const [productos, setProductos] = useState<ProductoListItem[]>([]);
+  const [numeroGuia, setNumeroGuia] = useState("");
   const [fecha, setFecha] = useState(hoy());
   const [agenciaId, setAgenciaId] = useState("");
   const [observacion, setObservacion] = useState("");
@@ -35,6 +36,9 @@ export default function NuevaGuiaPage() {
   useEffect(() => {
     listarAgencias({ estado: "ACTIVO" }).then(setAgencias).catch(() => {});
     listarProductos({ estado: "ACTIVO" }).then(setProductos).catch(() => {});
+    obtenerSiguienteNumeroGuia()
+      .then((r) => setNumeroGuia(r.numero_guia))
+      .catch(() => {});
   }, []);
 
   function actualizarLinea(index: number, cambios: Partial<LineaForm>) {
@@ -61,6 +65,10 @@ export default function NuevaGuiaPage() {
     event.preventDefault();
     setError("");
 
+    if (!numeroGuia.trim()) {
+      setError("El número de guía es obligatorio.");
+      return;
+    }
     if (!agenciaId) {
       setError("Selecciona una agencia.");
       return;
@@ -87,6 +95,7 @@ export default function NuevaGuiaPage() {
     setGuardando(true);
     try {
       const guia = await crearGuia({
+        numero_guia: numeroGuia.trim(),
         fecha,
         agencia_id: Number(agenciaId),
         observacion: observacion || undefined,
@@ -108,6 +117,15 @@ export default function NuevaGuiaPage() {
           <form onSubmit={handleSubmit}>
             <div style={{ maxWidth: 920, margin: "0 auto" }}>
             <div className="form-grid cols-2" style={{ marginBottom: 24, maxWidth: "none" }}>
+              <label className="field">
+                N° de guía *
+                <input
+                  className="input"
+                  value={numeroGuia}
+                  onChange={(e) => setNumeroGuia(e.target.value)}
+                  required
+                />
+              </label>
               <label className="field">
                 Fecha *
                 <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />

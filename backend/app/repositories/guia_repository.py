@@ -54,6 +54,11 @@ class GuiaRepository:
             )
         ).first()
 
+    def get_by_numero_guia(self, numero_guia: str):
+        return self.db.scalar(
+            select(Guia).where(Guia.numero_guia == numero_guia)
+        )
+
     # ==========================
     # Create
     # ==========================
@@ -118,8 +123,26 @@ class GuiaRepository:
         guia: Guia,
         guia_data: GuiaUpdate
     ):
+        if guia_data.numero_guia is not None and guia_data.numero_guia != guia.numero_guia:
+            existente = self.db.scalar(
+                select(Guia).where(
+                    Guia.numero_guia == guia_data.numero_guia,
+                    Guia.id != guia.id,
+                )
+            )
+            if existente:
+                raise ValueError(
+                    f"Ya existe otra guía con el número '{guia_data.numero_guia}'."
+                )
+            guia.numero_guia = guia_data.numero_guia
+
         if guia_data.fecha is not None:
             guia.fecha = guia_data.fecha
+
+        if guia_data.agencia_id is not None and guia_data.agencia_id != guia.agencia_id:
+            if not self.db.get(Agencia, guia_data.agencia_id):
+                raise ValueError("La agencia seleccionada no existe.")
+            guia.agencia_id = guia_data.agencia_id
 
         if guia_data.observacion is not None:
             guia.observacion = guia_data.observacion

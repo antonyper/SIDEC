@@ -9,13 +9,19 @@ from app.schemas.detalle_guia_schema import DetalleGuiaCreate, DetalleGuiaRespon
 # =========================
 
 class GuiaCreate(BaseSchema):
+    numero_guia: str | None = None
     fecha: date
     agencia_id: int
     observacion: str | None = None
     detalles: list[DetalleGuiaCreate] | None = None
 
+class SiguienteNumeroGuiaResponse(BaseSchema):
+    numero_guia: str
+
 class GuiaUpdate(BaseSchema):
+    numero_guia: str | None = None
     fecha: date | None = None
+    agencia_id: int | None = None
     estado: EstadoGuia | None = None
     observacion: str | None = None
     detalles: list[DetalleGuiaUpdate] | None = None

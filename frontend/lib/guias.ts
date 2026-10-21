@@ -42,6 +42,7 @@ export type DetalleGuiaInput = {
 };
 
 export type GuiaCreateInput = {
+  numero_guia?: string;
   fecha: string;
   agencia_id: number;
   observacion?: string;
@@ -57,13 +58,20 @@ export type DetalleGuiaUpdateInput = {
 };
 
 export type GuiaUpdateInput = {
+  numero_guia?: string;
   fecha?: string;
+  agencia_id?: number;
+  estado?: EstadoGuia;
   observacion?: string;
   detalles?: DetalleGuiaUpdateInput[];
 };
 
 export function listarGuias(): Promise<Guia[]> {
   return apiGet(`/guias`);
+}
+
+export function obtenerSiguienteNumeroGuia(): Promise<{ numero_guia: string }> {
+  return apiGet(`/guias/siguiente-numero`);
 }
 
 export function obtenerGuia(id: number): Promise<Guia> {

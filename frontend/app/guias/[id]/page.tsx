@@ -13,9 +13,10 @@ import {
   ESTADO_GUIA_LABEL,
   obtenerGuia,
   type DetalleGuiaUpdateInput,
+  type EstadoGuia,
   type Guia,
 } from "@/lib/guias";
-import { obtenerAgencia, type Agencia } from "@/lib/agencias";
+import { listarAgencias, obtenerAgencia, type Agencia, type AgenciaListItem } from "@/lib/agencias";
 import { listarProductos, type ProductoListItem } from "@/lib/productos";
 
 type LineaForm = {
@@ -32,13 +33,17 @@ export default function GuiaDetallePage({ params }: { params: Promise<{ id: stri
 
   const [guia, setGuia] = useState<Guia | null>(null);
   const [agencia, setAgencia] = useState<Agencia | null>(null);
+  const [agencias, setAgencias] = useState<AgenciaListItem[]>([]);
   const [productos, setProductos] = useState<ProductoListItem[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [confirmarAnular, setConfirmarAnular] = useState(false);
 
   const [editando, setEditando] = useState(false);
+  const [numeroGuia, setNumeroGuia] = useState("");
   const [fecha, setFecha] = useState("");
+  const [agenciaId, setAgenciaId] = useState("");
+  const [estado, setEstado] = useState<EstadoGuia>("EN_VENTA");
   const [observacion, setObservacion] = useState("");
   const [lineas, setLineas] = useState<LineaForm[]>([]);
   const [guardando, setGuardando] = useState(false);
@@ -49,9 +54,14 @@ export default function GuiaDetallePage({ params }: { params: Promise<{ id: stri
     try {
       const g = await obtenerGuia(Number(id));
       setGuia(g);
-      const [a, prods] = await Promise.all([obtenerAgencia(g.agencia_id), listarProductos()]);
+      const [a, prods, todasAgencias] = await Promise.all([
+        obtenerAgencia(g.agencia_id),
+        listarProductos(),
+        listarAgencias(),
+      ]);
       setAgencia(a);
       setProductos(prods);
+      setAgencias(todasAgencias);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo cargar la guía.");
     } finally {
@@ -81,7 +91,10 @@ export default function GuiaDetallePage({ params }: { params: Promise<{ id: stri
 
   function abrirEdicion() {
     if (!guia) return;
+    setNumeroGuia(guia.numero_guia);
     setFecha(guia.fecha);
+    setAgenciaId(String(guia.agencia_id));
+    setEstado(guia.estado);
     setObservacion(guia.observacion ?? "");
     setLineas(
       guia.detalles.map((d) => ({
@@ -121,6 +134,16 @@ export default function GuiaDetallePage({ params }: { params: Promise<{ id: stri
     if (!guia) return;
     setError("");
 
+    if (!numeroGuia.trim()) {
+      setError("El número de guía es obligatorio.");
+      return;
+    }
+
+    if (!agenciaId) {
+      setError("Selecciona una agencia.");
+      return;
+    }
+
     if (lineas.length === 0) {
       setError("La guía debe tener al menos un producto.");
       return;
@@ -144,7 +167,10 @@ export default function GuiaDetallePage({ params }: { params: Promise<{ id: stri
     setGuardando(true);
     try {
       await actualizarGuia(guia.id, {
+        numero_guia: numeroGuia.trim(),
         fecha,
+        agencia_id: Number(agenciaId),
+        estado,
         observacion: observacion || undefined,
         detalles,
       });
@@ -162,7 +188,7 @@ export default function GuiaDetallePage({ params }: { params: Promise<{ id: stri
     guia?.estado === "PENDIENTE_LIQUIDACION" ||
     guia?.estado === "PARCIALMENTE_LIQUIDADA";
   const puedeAnular = guia && guia.estado !== "LIQUIDADA" && guia.estado !== "PARCIALMENTE_LIQUIDADA" && guia.estado !== "ANULADA";
-  const puedeEditar = guia && guia.estado !== "ANULADA";
+  const puedeEditar = Boolean(guia);
 
   if (guia && editando) {
     return (
@@ -175,8 +201,38 @@ export default function GuiaDetallePage({ params }: { params: Promise<{ id: stri
               <div style={{ maxWidth: 920, margin: "0 auto" }}>
               <div className="form-grid cols-2" style={{ marginBottom: 24, maxWidth: "none" }}>
                 <label className="field">
+                  N° de guía *
+                  <input
+                    className="input"
+                    value={numeroGuia}
+                    onChange={(e) => setNumeroGuia(e.target.value)}
+                    required
+                  />
+                </label>
+                <label className="field">
                   Fecha *
                   <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+                </label>
+                <label className="field">
+                  Agencia *
+                  <select className="input" value={agenciaId} onChange={(e) => setAgenciaId(e.target.value)} required>
+                    <option value="">Selecciona una agencia</option>
+                    {agencias.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  Estado *
+                  <select className="input" value={estado} onChange={(e) => setEstado(e.target.value as EstadoGuia)} required>
+                    {Object.entries(ESTADO_GUIA_LABEL).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="field" style={{ gridColumn: "1 / -1" }}>
                   Observación

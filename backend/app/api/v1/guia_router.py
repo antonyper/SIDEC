@@ -9,6 +9,7 @@ from app.schemas.guia_schema import (
     GuiaResponse,
     GuiaListResponse,
     GuiaUpdate,
+    SiguienteNumeroGuiaResponse,
 )
 from app.services.guia_service import GuiaService
 
@@ -25,6 +26,14 @@ def get_guias(db: Session = Depends(get_db)):
     service = GuiaService(repository)
 
     return service.get_all()
+
+
+@router.get("/siguiente-numero", response_model=SiguienteNumeroGuiaResponse)
+def get_siguiente_numero(db: Session = Depends(get_db)):
+    repository = GuiaRepository(db)
+    service = GuiaService(repository)
+
+    return SiguienteNumeroGuiaResponse(numero_guia=service.get_siguiente_numero())
 
 
 @router.get("/{guia_id}", response_model=GuiaResponse)

@@ -1,4 +1,4 @@
-import { apiGet, buildQuery, ApiError } from "./http";
+import { apiGet, buildQuery, ApiError, getToken } from "./http";
 
 export { ApiError } from "./http";
 
@@ -227,7 +227,10 @@ export function reporteDetallePorAgencia(rango: RangoFechas): Promise<DetalleAge
 }
 
 export async function descargarDetallePorAgenciaPdf(rango: RangoFechas): Promise<void> {
-  const res = await fetch(`/api/reportes/detalle-por-agencia/pdf${buildQuery(rango)}`);
+  const token = getToken();
+  const res = await fetch(`/api/reportes/detalle-por-agencia/pdf${buildQuery(rango)}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
   if (!res.ok) {
     throw new ApiError("No se pudo generar el PDF.");
   }
