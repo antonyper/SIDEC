@@ -501,16 +501,121 @@ Para evitar introducir lógica que no hemos definido:
 
 ---
 
-# 8. Estado actual del proyecto
+# 8. Agencias y Productos
+
+**Estado: CERRADO Y PROBADO**
+
+## Agencias
+
+- CRUD completo (crear, listar con filtros por nombre/propietario/estado, obtener por ID, actualizar, dar de baja, reactivar).
+- Campos adicionales: `ruta`, `latitud`, `longitud` (geolocalización de la agencia).
+- Al editar, un campo enviado como cadena vacía (`""`) limpia el valor (se guarda `NULL`) en lugar de ignorarse. Aplica a `propietario`, `agente`, `telefono`, `direccion` y `ruta`. `nombre` nunca se limpia a vacío porque es obligatorio.
+- El listado del frontend ordena las agencias `ACTIVO` antes que las `INACTIVO`, manteniendo el resto del orden estable.
+
+## Productos
+
+- CRUD completo, igual que Agencias, más una eliminación lógica adicional.
+- `precio` es obligatorio al crear (antes era opcional y causaba un error 500 en base de datos; ahora Pydantic lo rechaza con un 422 claro).
+- **Soft delete independiente de `estado`:** se agregó la columna `eliminado` (booleano) en vez de reutilizar el enum `Estado` (que ya tiene semántica propia de ACTIVO/INACTIVO y es compartido con Agencia). `DELETE /productos/{id}` marca `eliminado = true`; el producto deja de aparecer en cualquier listado pero se conserva en base de datos para no romper referencias históricas en `detalle_guia` y `movimientos_inventario`.
+- El buscador combina nombre y categoría en un solo campo (`buscar`, con `OR` en el backend). En el frontend, al vaciar el campo se refresca automáticamente la lista sin necesidad de pulsar "Buscar".
+
+---
+
+# 9. Autenticación y Roles
+
+**Estado: CERRADO Y PROBADO**
+
+Se agregó un módulo de usuarios para proteger el sistema antes de exponerlo en una VPS pública. No existe registro público: solo un usuario `ADMIN` puede crear cuentas.
+
+## Modelo
+
+- Tabla `usuarios`: `nombre`, `username` (único), `password_hash` (bcrypt), `rol` (`ADMIN` | `OPERADOR`), `activo`.
+- Login: `POST /auth/login` devuelve un JWT (`access_token`) válido 12 horas, firmado con `SECRET_KEY`.
+- Todas las rutas de la API (salvo `/auth/login`) exigen el header `Authorization: Bearer <token>`.
+
+## Permisos por rol
+
+| Módulo | ADMIN | OPERADOR |
+|---|---|---|
+| Guías, Liquidaciones, Cobranzas | Acceso total | Acceso total |
+| Agencias, Productos | Acceso total | Acceso total |
+| Inventario — consulta | Sí | Sí |
+| Inventario — movimiento manual | Sí | No |
+| Reportes | Sí | No |
+| Gestión de usuarios (`/usuarios`) | Sí | No |
+
+## Frontend
+
+- Pantalla `/login`, sesión guardada en `localStorage`.
+- `AuthProvider` redirige a `/login` si no hay sesión, y de vuelta a `/` si ya hay sesión y se visita `/login`.
+- Si el backend responde `401` (token vencido o inválido) en cualquier petición, la sesión se cierra automáticamente y se redirige al login.
+- El menú lateral oculta "Reportes" y "Usuarios" para el rol `OPERADOR`.
+
+---
+
+# 10. Reportes
+
+**Estado: CERRADO Y PROBADO** (solo accesible para `ADMIN`)
+
+## Reportes implementados
+
+- **Dashboard de cobranza** (`/reportes/dashboard-cobranza`): estimado 50% total, deuda por cobrar, guías vencidas (+30 días), estimado 50% de guías vencidas; gráfico de estimado 50% por mes (barras verticales) y tabla de agencias más urgentes.
+- **Detalle por agencia**: por cada agencia, el detalle de guías en `EN_VENTA`, `PENDIENTE_LIQUIDACION` y las líneas aún no liquidadas de guías `PARCIALMENTE_LIQUIDADA`. Incluye filtro de rango de fechas (con atajos: semana actual, mes actual, últimos 30 días), estado de la guía junto al producto, y exportación a **PDF real** (generado en el backend con `reportlab`, no impresión del navegador).
+- **Distribución**: matriz agencia × producto con cantidad distribuida, excluyendo guías anuladas, con totales por fila/columna y filtro de productos.
+- **Ranking de agencias por % de venta**, **Reporte por agencia**, **Reporte por producto** (con % de venta = vendido/entregado × 100), **Resumen por período**.
+
+## Reglas relevantes
+
+- "Vencida"/"próxima a vencer" se calcula en tiempo real a partir de `fecha` + fecha actual, no desde el `estado` almacenado (que solo se recalcula de forma perezosa dentro de `GuiaService`).
+- "50% estimado" = `0.5 × cantidad × precio_agencia`, donde `precio_agencia = precio_publico × porcentaje_cobro / 100`. Es la métrica central reutilizada en el dashboard, el detalle por agencia y el PDF.
+- Los gráficos usan un componente `BarChart` propio (CSS/SVG, sin librería externa) para evitar problemas de compatibilidad con Next 16 / React 19.
+
+---
+
+# 11. Guías — funcionalidades adicionales
+
+**Estado: CERRADO Y PROBADO**
+
+- `GET /guias/siguiente-numero` devuelve el próximo número correlativo (`G000001`, `G000002`, …). El formulario de **Nueva guía** lo precarga automáticamente, pero el campo es editable antes de guardar.
+- `GuiaCreate` y `GuiaUpdate` aceptan `numero_guia` explícito; si se repite un número ya existente, se rechaza con un error claro en vez de violar la restricción única silenciosamente.
+- `GuiaUpdate` ahora también acepta `agencia_id` (reasignar la guía a otra agencia, con validación de que la agencia exista) y `estado` (cambio manual de estado).
+- El botón "Editar" de una guía está disponible incluso cuando está `ANULADA`, para poder revertir la anulación o corregir datos, incluyendo el propio `estado`.
+
+---
+
+# 12. Despliegue
+
+**Estado: PREPARADO, PENDIENTE DE EJECUTAR EN LA VPS**
+
+Se preparó el despliegue en VPS mediante Docker Compose:
+
+- `backend/Dockerfile`: Python 3.14, corre `alembic upgrade head` antes de levantar `uvicorn`.
+- `frontend/Dockerfile`: build multi-stage con salida `standalone` de Next.js.
+- `docker-compose.yml` (raíz): orquesta `db` (Postgres 16), `backend`, `frontend` y `caddy`. Solo `caddy` queda expuesto a internet (puertos 80/443); `db` y `backend` solo son accesibles dentro de la red interna de Docker.
+- `Caddyfile`: reverse proxy con HTTPS automático (Let's Encrypt) hacia el `frontend`.
+- `.env.example` (raíz): plantilla de variables (`DOMAIN`, credenciales de base de datos, `SECRET_KEY`).
+- `backend/requirements.txt` fue regenerado completo (antes solo listaba 4 de ~15 paquetes necesarios).
+
+Pendiente de hacer en la VPS real: instalar Docker, completar el `.env`, apuntar el DNS del dominio, `docker compose up -d --build`, y configurar backups automáticos (`pg_dump` diario) y el firewall.
+
+---
+
+# 13. Estado actual del proyecto
 
 ## Módulos cerrados
 
-| Módulo | Sprint | Estado |
-|---|---:|---|
-| Guías | — | Implementado / probado en el flujo actual |
-| Liquidaciones | 4 | ✅ Cerrado |
-| Cobranzas | 5 | ✅ Cerrado |
+| Módulo | Estado |
+|---|---|
+| Agencias | ✅ Cerrado |
+| Productos | ✅ Cerrado |
+| Guías | ✅ Cerrado |
+| Liquidaciones | ✅ Cerrado |
+| Cobranzas | ✅ Cerrado |
+| Inventario | ✅ Cerrado |
+| Reportes | ✅ Cerrado |
+| Autenticación y roles | ✅ Cerrado |
+| Despliegue (Docker Compose + Caddy) | 🚧 Preparado, falta ejecutar en la VPS |
 
 ## Próximo paso
 
-El siguiente sprint debe definirse a partir de los requisitos pendientes del proyecto, evitando asumir funcionalidades que todavía no hayan sido especificadas.
+Ejecutar el despliegue en la VPS real (ver sección 12) y, una vez en producción, definir el siguiente sprint a partir de los requisitos que surjan del uso real del sistema.

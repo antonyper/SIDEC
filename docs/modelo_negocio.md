@@ -193,20 +193,21 @@ Se debe permitir:
 
 ## Estados de la Guía
 
-Una guía puede encontrarse en alguno de los siguientes estados durante su ciclo de vida:
+Una guía puede encontrarse en alguno de los siguientes estados durante su ciclo de vida (nombre implementado entre paréntesis):
 
-* **Pendiente:** la guía ha sido emitida y los productos fueron entregados a la agencia.
-* **Pendiente de Liquidación:** han transcurrido más de 30 días desde la creación de la guía y la agencia debe ser contactada para coordinar la visita de liquidación.
-* **Parcialmente Liquidada:** una parte de los productos de la guía ya fue liquidada, pero aún existen productos pendientes.
-* **Liquidada:** todos los productos de la guía fueron liquidados.
-* **Anulada:** la guía fue anulada y no forma parte del proceso operativo.
+* **En venta** (`EN_VENTA`): la guía ha sido emitida y los productos fueron entregados a la agencia.
+* **Pendiente de Liquidación** (`PENDIENTE_LIQUIDACION`): han transcurrido más de 30 días desde la creación de la guía y la agencia debe ser contactada para coordinar la visita de liquidación.
+* **Parcialmente Liquidada** (`PARCIALMENTE_LIQUIDADA`): una parte de los productos de la guía ya fue liquidada, pero aún existen productos pendientes.
+* **Liquidada** (`LIQUIDADA`): todos los productos de la guía fueron liquidados.
+* **Anulada** (`ANULADA`): la guía fue anulada y no forma parte del proceso operativo.
 
 ### Reglas de Negocio
 
-* Una guía permanecerá en estado **Pendiente** durante los primeros 30 días desde su creación.
+* Una guía permanecerá en estado **En venta** durante los primeros 30 días desde su creación.
 * Al superar 30 días desde su creación, el sistema cambiará automáticamente su estado a **Pendiente de Liquidación**, siempre que aún existan productos pendientes de liquidar.
 * Cuando todos los productos de la guía hayan sido liquidados, el estado cambiará automáticamente a **Liquidada**.
 * Si solo una parte de los productos ha sido liquidada, el estado será **Parcialmente Liquidada**.
+* El estado de una guía también puede corregirse manualmente desde la pantalla de edición (por ejemplo, para revertir una anulación), además de los cambios automáticos descritos arriba.
 
 ---
 
@@ -282,12 +283,15 @@ El objetivo de esta funcionalidad es avisar a la agencia que el distribuidor rea
 
 ## Reportes
 
-* Guías emitidas
-* Productos entregados
-* Productos vendidos
-* Productos devueltos
-* Cobros realizados
-* Saldos pendientes
+Implementados (acceso restringido al rol Administrador):
+
+* Dashboard de cobranza
+* Detalle por agencia (con exportación a PDF)
+* Distribución agencia × producto
+* Ranking de agencias por % de venta
+* Reporte por agencia
+* Reporte por producto
+* Resumen por período
 
 ---
 
@@ -313,9 +317,10 @@ El sistema deberá permitir:
 
 El diseño deberá permitir incorporar nuevas funcionalidades sin modificar la lógica principal del sistema.
 
+> **Nota:** la gestión de usuarios y roles (`ADMIN` / `OPERADOR`) ya fue implementada y dejó de ser una consideración futura; ver `SIDEC_reglas_negocio_funcionalidades.md`, sección 9.
+
 Entre las posibles ampliaciones se encuentran:
 
-* Gestión de usuarios y roles.
 * Firma digital de recepción.
 * Captura de fotografías.
 * Geolocalización de entregas.

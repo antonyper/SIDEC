@@ -22,11 +22,12 @@ El sistema estará compuesto por un frontend desarrollado en React con Next.js (
         React + Next.js (PWA)
 
                       │
-              HTTP / REST API
+         HTTP / REST API + JWT (Authorization: Bearer)
 
                       ▼
 
                  FastAPI
+         (valida token y rol por ruta)
 
                       │
 
@@ -36,6 +37,10 @@ El sistema estará compuesto por un frontend desarrollado en React con Next.js (
 
                   PostgreSQL
 ```
+
+En producción, Caddy actúa como reverse proxy con HTTPS automático frente al
+frontend, y backend/base de datos quedan solo en la red interna de Docker
+(ver sección "Despliegue").
 
 ---
 
@@ -49,8 +54,9 @@ Responsabilidades:
 * Validaciones básicas.
 * Consumo de la API.
 * Impresión de guías.
-* Apertura de WhatsApp.
-* Gestión de sesión.
+* Gestión de sesión (token guardado en `localStorage`, redirección a `/login` si no hay sesión o si expira).
+
+Pendiente: apertura de WhatsApp (definida en el modelo de negocio, no implementada aún).
 
 Tecnologías:
 
@@ -67,11 +73,12 @@ Responsabilidades:
 
 * Lógica de negocio.
 * Validación de datos.
-* Autenticación.
+* Autenticación (JWT) y autorización por rol (`ADMIN` / `OPERADOR`).
 * Exposición de la API REST.
 * Actualización de inventario.
 * Gestión de liquidaciones.
 * Gestión de cobranzas.
+* Generación de reportes y exportación a PDF.
 
 Tecnologías:
 
@@ -97,22 +104,34 @@ sidec/
 
 ├── backend/
 │   ├── app/
+│   │   ├── api/v1/
+│   │   ├── core/        (config, security.py, auth_dependencies.py)
+│   │   ├── models/, repositories/, services/, schemas/, enums/
+│   │   └── main.py
 │   ├── alembic/
+│   ├── Dockerfile
 │   ├── requirements.txt
 │   └── .venv/
 │
 ├── frontend/
-│   ├── app/
+│   ├── app/              (incluye /login, /usuarios)
 │   ├── components/
-│   ├── services/
+│   ├── lib/               (clientes HTTP por módulo, incluye auth.ts)
+│   ├── Dockerfile
 │   └── public/
+│
+├── docker-compose.yml
+├── Caddyfile
+├── .env.example
 │
 ├── docs/
 │   ├── arquitectura.md
 │   ├── modelo_negocio.md
 │   ├── modelo_datos.md
-│   ├── casos_uso.md
-│   └── roadmap.md
+│   ├── casos_de_uso.md
+│   ├── readme.md
+│   ├── roadmap.md
+│   └── SIDEC_reglas_negocio_funcionalidades.md
 │
 └── README.md
 ```
@@ -158,6 +177,33 @@ sidec/
 
 * Inventario
 
-* Reportes
+* Reportes (acceso restringido al rol Administrador)
+
+* Autenticación y usuarios
+
+  * Login (JWT)
+  * Gestión de usuarios y roles (`ADMIN` / `OPERADOR`)
 
 * Configuración
+
+---
+
+# Despliegue
+
+En producción, el sistema corre mediante Docker Compose con 4 servicios:
+
+```text
+Internet
+    │
+Caddy (puertos 80/443, HTTPS automático)
+    │
+Frontend (Next.js, puerto 3000 interno)
+    │
+Backend (FastAPI, puerto 8000 interno)
+    │
+PostgreSQL (puerto 5432 interno)
+```
+
+Solo Caddy queda expuesto a internet; el resto de servicios solo son
+accesibles dentro de la red interna de Docker. El backend aplica las
+migraciones de Alembic automáticamente al iniciar el contenedor.
