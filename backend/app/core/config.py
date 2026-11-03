@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     SIDEC_ADMIN_PASSWORD: str = ""
     SIDEC_ADMIN_NOMBRE: str = "Administrador"
 
+    # Seed (app/services/seed_service.py). SIDEC_SEED_ADMIN_* crea un ADMIN adicional si no
+    # existe (cuenta nominal para quien prueba). SIDEC_SEED_DEMO carga datos demo solo si no
+    # hay agencias. Ambos son idempotentes y se ejecutan al arrancar o con `python -m app.seed`.
+    SIDEC_SEED_ADMIN_USERNAME: str = ""
+    SIDEC_SEED_ADMIN_PASSWORD: str = ""
+    SIDEC_SEED_ADMIN_NOMBRE: str = "Administrador de pruebas"
+    SIDEC_SEED_DEMO: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
