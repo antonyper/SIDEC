@@ -1,0 +1,167 @@
+# SIDEC: pruebas, imágenes en ECR y despliegue vía Bifrost3-0/helm_charts → ArgoCD.
+#
+# Mismo patrón que IntiOps/IAProjects (iavigil-web.yml): credenciales AWS por OIDC (sin llaves
+# estáticas) y actualización del tag en helm_charts por repository_dispatch.
+#
+# Requisitos (una vez):
+#   - Variable de repo SIDEC_ECR_ROLE_ARN: rol IAM creado por Terraform en
+#     Bifrost3-0/argocd_application (sidec.tf, output sidec_github_role_arn). Solo confía en
+#     IntiOps/SIDEC con ref main y solo puede subir a sidec-backend y sidec-frontend.
+#   - Secret PAT_TOKEN: token con permiso para disparar workflows en Bifrost3-0/helm_charts
+#     (el mismo que usan IAProjects y ea-nextgen-platform). Sin él las imágenes se publican igual
+#     y el resumen indica los tags para actualizar los values a mano.
+
+name: SIDEC
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: sidec-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      APP_NAME: SIDEC
+      APP_VERSION: ci
+      DATABASE_HOST: localhost
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: sidec
+      DATABASE_USER: sidec
+      SECRET_KEY: ci-only-secret-key-not-used-anywhere-else
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Dependencias
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libpq-dev
+          python -m pip install -r requirements.txt --quiet
+      - name: La app importa (rutas, modelos y configuración)
+        run: python -c "import app.main"
+      - name: Migraciones con una sola cabeza
+        run: |
+          heads=$(alembic heads | wc -l)
+          alembic heads
+          test "$heads" -eq 1 || { echo "::error::Alembic tiene $heads cabezas; hay que unificarlas."; exit 1; }
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  imagenes:
+    needs: [backend, frontend]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - componente: backend
+            ecr: sidec-backend
+            values: charts/bifrost-app-chart/values-sidec-backend.yaml
+            build_args: ""
+          - componente: frontend
+            ecr: sidec-frontend
+            values: charts/bifrost-app-chart/values-sidec-frontend.yaml
+            # En el clúster /api lo enruta el Gateway directo al backend; el rewrite de Next
+            # queda como respaldo apuntando al Service del mismo namespace.
+            build_args: BACKEND_URL=http://sidec-backend:8000
+    env:
+      # El `if` de un paso no ve el `env` de ese mismo paso: el indicador va a nivel de job.
+      HAY_TOKEN_HELM: ${{ secrets.PAT_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Credenciales AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.SIDEC_ECR_ROLE_ARN }}
+
+      - name: Login a Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag de la imagen
+        id: meta
+        run: |
+          tag=$(git rev-parse --short HEAD)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "image=${{ steps.ecr.outputs.registry }}/${{ matrix.ecr }}" >> "$GITHUB_OUTPUT"
+          # Tags inmutables: si este commit ya tiene imagen (reintento del workflow), no se reconstruye.
+          if aws ecr describe-images --repository-name "${{ matrix.ecr }}" --image-ids imageTag="$tag" >/dev/null 2>&1; then
+            echo "existe=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.meta.outputs.existe != 'true'
+
+      - name: Build y push (linux/amd64)
+        if: steps.meta.outputs.existe != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.componente }}
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          build-args: ${{ matrix.build_args }}
+          tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha,scope=sidec-${{ matrix.componente }}
+          cache-to: type=gha,mode=max,scope=sidec-${{ matrix.componente }}
+
+      - name: Despliegue (tag en helm_charts → ArgoCD)
+        if: env.HAY_TOKEN_HELM == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: Bifrost3-0/helm_charts
+          event-type: update_image
+          client-payload: >-
+            {"file_path": "${{ matrix.values }}", "repository_name": "${{ matrix.ecr }}",
+             "image": "${{ steps.meta.outputs.tag }}", "tag_field": "true"}
+
+      - name: Resumen
+        run: |
+          {
+            echo "### SIDEC ${{ matrix.componente }}"
+            echo "Imagen: \`${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}\`"
+            if [ "$HAY_TOKEN_HELM" = "true" ]; then
+              echo "Despliegue: tag enviado a Bifrost3-0/helm_charts (${{ matrix.values }}); ArgoCD sincroniza."
+            else
+              echo "⚠️ Falta el secret PAT_TOKEN: actualiza \`tag: \"${{ steps.meta.outputs.tag }}\"\` en ${{ matrix.values }}."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

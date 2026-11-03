@@ -211,16 +211,10 @@ class LiquidacionService:
             )
 
         # ==========================
-        # Crear liquidación
-        # ==========================
-
-        liquidacion = self.repository.create(
-            liquidacion_data=liquidacion_data,
-            detalles_calculados=detalles_calculados,
-        )
-
-        # ==========================
-        # Crear cobranza
+        # Validar el pago a cuenta ANTES de guardar:
+        # repository.create confirma la liquidación (y la devolución
+        # al inventario). Si la validación fallara después, quedaría
+        # una liquidación sin cobranza y el detalle bloqueado.
         # ==========================
 
         monto_cobranza = sum(
@@ -243,6 +237,19 @@ class LiquidacionService:
                 "El pago a cuenta no puede ser mayor "
                 "al monto de la liquidación."
             )
+
+        # ==========================
+        # Crear liquidación
+        # ==========================
+
+        liquidacion = self.repository.create(
+            liquidacion_data=liquidacion_data,
+            detalles_calculados=detalles_calculados,
+        )
+
+        # ==========================
+        # Crear cobranza
+        # ==========================
 
         # Si no se indica pago a cuenta,
         # se considera la liquidación totalmente cobrada.

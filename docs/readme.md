@@ -121,6 +121,7 @@ El frontend es un cliente puro (sin SSR de datos): todas las páginas son compon
 
 * Docker Compose (`db`, `backend`, `frontend`, `caddy`)
 * Caddy (reverse proxy + HTTPS automático)
+* Entorno de prueba en Bifrost (Kubernetes + ArgoCD): https://sidec.tyc-iasolutions.com — ver `docs/despliegue-bifrost.md`
 
 ## Documentación
 

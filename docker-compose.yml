@@ -27,15 +27,20 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       SECRET_KEY: ${SECRET_KEY}
       ACCESS_TOKEN_EXPIRE_MINUTES: 720
+      API_ROOT_PATH: /api
+      SIDEC_ADMIN_USERNAME: ${SIDEC_ADMIN_USERNAME}
+      SIDEC_ADMIN_PASSWORD: ${SIDEC_ADMIN_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # El rewrite /api se fija al compilar (ver frontend/Dockerfile).
+      args:
+        BACKEND_URL: http://backend:8000
     restart: unless-stopped
-    environment:
-      BACKEND_URL: http://backend:8000
     depends_on:
       - backend
 
