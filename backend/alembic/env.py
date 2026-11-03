@@ -37,8 +37,11 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+# configparser trata "%" como interpolación: una contraseña con caracteres
+# escapados (%40, %2F...) rompería alembic si no se duplica.
 config.set_main_option(
-    "sqlalchemy.url", settings.database_url
+    "sqlalchemy.url",
+    settings.database_url.render_as_string(hide_password=False).replace("%", "%%"),
 )
 
 def run_migrations_offline() -> None:
