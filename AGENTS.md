@@ -113,6 +113,17 @@ Fuentes: `docs/SIDEC_reglas_negocio_funcionalidades.md` (reglas por sprint, la m
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | 720 por defecto |
 | `API_ROOT_PATH` | prefijo público de la API (`/api`), para que Swagger encuentre `openapi.json` |
 | `SIDEC_ADMIN_USERNAME/PASSWORD/NOMBRE` | primer ADMIN; solo se usa si la tabla `usuarios` está vacía |
+| `SIDEC_SEED_ADMIN_USERNAME/PASSWORD/NOMBRE` | ADMIN adicional (cuenta nominal de quien prueba); se crea si no existe, nunca se modifica |
+| `SIDEC_SEED_DEMO` | `true` carga datos demo al arrancar si no hay agencias |
+
+### Seed
+
+`app/services/seed_service.py` (al arrancar, o a mano con `python -m app.seed [--demo]`). Los datos
+demo pasan por los services, no por SQL: 6 productos con stock inicial y reposición, 6 agencias de
+Lima y 12 guías que cubren todos los escenarios (en venta, vencidas, liquidada y cobrada, liquidada
+con cobro parcial, parcialmente liquidada, liquidación anulada, guía anulada). Las fechas son
+relativas al día de la carga. Si cambias una regla de negocio, el seed la respeta solo; si añades un
+estado nuevo, añade su escenario a `GUIAS_DEMO`.
 
 Frontend: `BACKEND_URL` es **argumento de build**, no de runtime. Next fija los rewrites de
 `next.config.ts` en `next build`; cambiarlo en el contenedor no tiene efecto (así nació el 500 de
@@ -152,7 +163,7 @@ sidec-backend → sidec-db.sidec.svc:5432      (Postgres 16, PVC 2Gi, ns sidec)
 | DNS + ruta del túnel | `argocd_application` → `tyc_cloudflare.tf` |
 | Apps ArgoCD `sidec-frontend`, `sidec-backend`, `sidec-db` | `argocd_application` → `tfvars/microservices/09_bifrost_next_apps_dev.tfvars` |
 | Values de cada app (chart común `bifrost-app-chart`) | `Bifrost3-0/helm_charts` → `charts/bifrost-app-chart/values-sidec-{frontend,backend,db}.yaml` |
-| Secretos (`DATABASE_PASSWORD`, `SECRET_KEY`, `SIDEC_ADMIN_PASSWORD`) | Vault `clients-prod/sidec`, generados por Terraform; llegan como Secret por External Secrets |
+| Secretos (`DATABASE_PASSWORD`, `SECRET_KEY`, `SIDEC_ADMIN_PASSWORD`, `SIDEC_SEED_ADMIN_PASSWORD`) | Vault `clients-prod/sidec`, generados por Terraform; llegan como Secret por External Secrets |
 | Build y despliegue | `.github/workflows/deploy.yml` (este repo) |
 
 Flujo: push a `main` → CI (import de la app, una sola cabeza de Alembic, lint + build del
@@ -186,6 +197,11 @@ Reglas del ecosistema Bifrost que aplican aquí: todo por GitOps (nada permanent
 - `BACKEND_URL` en runtime no hace nada (ver Configuración).
 - Sin `SIDEC_ADMIN_*` en una base vacía nadie puede entrar; el backend lo avisa en el log.
 - `estado` de liquidación es `LIQUIDADO`, no `ACTIVA`, aunque los documentos digan lo contrario.
+- Anular una liquidación registra un `INGRESO` por lo **vendido** además de la `DEVOLUCION` ya hecha
+  (`LiquidacionRepository.registrar_ingreso_por_anulacion`): todo lo entregado vuelve al stock aunque
+  la guía quede `PENDIENTE_LIQUIDACION` (producto aún en la agencia). Si se vuelve a liquidar, la
+  devolución se cuenta de nuevo. Es el comportamiento documentado; confirmar con negocio antes de
+  "arreglarlo".
 - Los repositories hacen `commit` por operación: una operación de service que toca varias tablas
   no es atómica. **Toda validación va antes de la primera escritura.** Caso real ya corregido: el
   límite de `pago_a_cuenta` se validaba después de que `LiquidacionRepository.create` confirmara,

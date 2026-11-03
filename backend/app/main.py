@@ -20,6 +20,7 @@ from app.api.v1.usuario_router import router as usuario_router
 from app.db.session import SessionLocal
 from app.repositories.guia_repository import GuiaRepository
 from app.services.bootstrap_service import crear_admin_inicial
+from app.services.seed_service import cargar_datos_demo, crear_admin_seed
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s [%(name)s] %(message)s")
 logger = logging.getLogger("sidec")
@@ -44,14 +45,22 @@ async def actualizar_estados_guias_periodicamente() -> None:
         await asyncio.sleep(24 * 60 * 60)
 
 
-def _crear_admin_inicial() -> None:
+def _datos_de_arranque() -> None:
     with SessionLocal() as db:
         crear_admin_inicial(db)
+        crear_admin_seed(db)
+    if settings.SIDEC_SEED_DEMO:
+        # Un fallo del seed no debe impedir que la API arranque: se registra y se sigue.
+        try:
+            with SessionLocal() as db:
+                cargar_datos_demo(db)
+        except Exception:
+            logger.exception("No se pudieron cargar los datos demo.")
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    await asyncio.to_thread(_crear_admin_inicial)
+    await asyncio.to_thread(_datos_de_arranque)
     tarea_actualizacion = asyncio.create_task(
         actualizar_estados_guias_periodicamente()
     )
