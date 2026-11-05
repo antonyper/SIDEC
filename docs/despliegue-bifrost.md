@@ -43,14 +43,20 @@ apps ArgoCD del proyecto `bifrost-next-dev` sobre el chart común `bifrost-app-c
 
 ## Acceso de la persona que prueba
 
-Usuario `admin`; la contraseña es `SIDEC_ADMIN_PASSWORD` en Vault `clients-prod/sidec`:
+Cuenta nominal `tester` (rol `ADMIN`), creada por el seed. Su contraseña la genera Terraform:
 
 ```bash
-vault kv get -field=SIDEC_ADMIN_PASSWORD clients-prod/sidec
+vault kv get -field=SIDEC_SEED_ADMIN_PASSWORD clients-prod/sidec
 ```
 
-Lo recomendable es entrar como `admin`, crear desde **Usuarios** la cuenta de la persona que prueba
-(rol `ADMIN` u `OPERADOR`) y pasarle esa credencial, no la del admin.
+`admin` (`SIDEC_ADMIN_PASSWORD`) queda para la administración; no compartirla.
+
+## Datos demo
+
+`SIDEC_SEED_DEMO=true` en `values-sidec-backend.yaml`: con la base sin agencias, el backend carga al
+arrancar 6 productos, 6 agencias y 12 guías en todos los estados (ver "Seed" en `AGENTS.md`), así los
+reportes y el dashboard tienen datos desde el primer login. Con datos ya cargados no hace nada. Para
+volver a los datos demo: vaciar la base (ver Operación) y reiniciar el backend.
 
 ## Operación
 
@@ -68,7 +74,11 @@ kubectl -n sidec exec deploy/sidec-db -- pg_dump -U sidec -d sidec > sidec-$(dat
 ```
 
 - **Empezar de cero**: no hay botón. Vaciar el esquema (`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`
-  desde psql) y reiniciar el backend: aplica las migraciones y recrea el admin.
+  desde psql) y reiniciar el backend: aplica las migraciones, recrea `admin` y `tester` y vuelve a
+  cargar los datos demo.
+- **SQL por `kubectl exec`**: la API del clúster está detrás del WAF de Cloudflare, que bloquea SQL en
+  los argumentos (`psql -c "..."`). Pasar el SQL por stdin (`kubectl exec -i ... -- psql <<'EOF'`) o
+  usar la consola interactiva.
 - **Rotar la contraseña del admin**: el bootstrap solo actúa con la tabla `usuarios` vacía; cambiarla
   desde la pantalla **Usuarios** (o vaciando la base, como arriba).
 - **Retirar el entorno**: quitar las tres entradas `sidec-*` de los tfvars y la ruta de
