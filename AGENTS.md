@@ -209,4 +209,8 @@ Reglas del ecosistema Bifrost que aplican aquí: todo por GitOps (nada permanent
   (regresión cubierta en `scripts/smoke_e2e.py`).
 - La tarea de guías vencidas corre en cada réplica del backend; con una réplica (el despliegue
   actual) no importa, con varias la actualización es idempotente pero se repite.
+- La revisión `12303139a0f6` conserva su identificador, pero ya no ejecuta la limpieza de demo:
+  fallaba al borrar productos con movimientos de stock y seleccionaba agencias/productos por
+  nombre. El arranque conserva todos los datos. Cualquier limpieza de producción la hace Jack
+  manualmente. La regresión se comprueba con `python -m pytest tests -q` desde `backend/`.
 - `"name": "fronted"` en `frontend/package.json` es un typo histórico, no afecta a nada.

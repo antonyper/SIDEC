@@ -58,6 +58,7 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq libpq-dev
           python -m pip install -r requirements.txt --quiet
+          python -m pip install pytest==9.2.0 ruff==0.17.4 --quiet
       - name: La app importa (rutas, modelos y configuración)
         run: python -c "import app.main"
       - name: Migraciones con una sola cabeza
@@ -65,6 +66,10 @@ jobs:
           heads=$(alembic heads | wc -l)
           alembic heads
           test "$heads" -eq 1 || { echo "::error::Alembic tiene $heads cabezas; hay que unificarlas."; exit 1; }
+      - name: Regresión del arranque sin borrado de datos
+        run: |
+          ruff check tests alembic/versions/12303139a0f6_eliminar_datos_demo_cargados_en_bifrost.py
+          python -m pytest tests -q
 
   frontend:
     runs-on: ubuntu-latest
