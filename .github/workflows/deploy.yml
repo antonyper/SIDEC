@@ -7,9 +7,9 @@
 #   - Variable de repo SIDEC_ECR_ROLE_ARN: rol IAM creado por Terraform en
 #     Bifrost3-0/argocd_application (sidec.tf, output sidec_github_role_arn). Solo confía en
 #     IntiOps/SIDEC con ref main y solo puede subir a sidec-backend y sidec-frontend.
-#   - Secret PAT_TOKEN: token con permiso para disparar workflows en Bifrost3-0/helm_charts
-#     (el mismo que usan IAProjects y ea-nextgen-platform). Sin él las imágenes se publican igual
-#     y el resumen indica los tags para actualizar los values a mano.
+#   - Variable AIP_APP_ID y secret AIP_APP_PRIVATE_KEY: la GitHub App aip-bifrost-agentes, instalada en
+#     Bifrost3-0. Cada ejecución pide un token de 1 hora solo para helm_charts; ningún token personal
+#     permanente. Sin ellos las imágenes se publican igual y el resumen indica los tags a mano.
 
 name: SIDEC
 
@@ -107,7 +107,7 @@ jobs:
             build_args: BACKEND_URL=http://sidec-backend:8000
     env:
       # El `if` de un paso no ve el `env` de ese mismo paso: el indicador va a nivel de job.
-      HAY_TOKEN_HELM: ${{ secrets.PAT_TOKEN != '' }}
+      HAY_TOKEN_HELM: ${{ vars.AIP_APP_ID != '' && secrets.AIP_APP_PRIVATE_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -148,11 +148,21 @@ jobs:
           cache-from: type=gha,scope=sidec-${{ matrix.componente }}
           cache-to: type=gha,mode=max,scope=sidec-${{ matrix.componente }}
 
+      - name: Token de la App para helm_charts
+        id: app
+        if: env.HAY_TOKEN_HELM == 'true'
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.AIP_APP_ID }}
+          private-key: ${{ secrets.AIP_APP_PRIVATE_KEY }}
+          owner: Bifrost3-0
+          repositories: helm_charts
+
       - name: Despliegue (tag en helm_charts → ArgoCD)
         if: env.HAY_TOKEN_HELM == 'true'
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.PAT_TOKEN }}
+          token: ${{ steps.app.outputs.token }}
           repository: Bifrost3-0/helm_charts
           event-type: update_image
           client-payload: >-
@@ -167,6 +177,6 @@ jobs:
             if [ "$HAY_TOKEN_HELM" = "true" ]; then
               echo "Despliegue: tag enviado a Bifrost3-0/helm_charts (${{ matrix.values }}); ArgoCD sincroniza."
             else
-              echo "⚠️ Falta el secret PAT_TOKEN: actualiza \`tag: \"${{ steps.meta.outputs.tag }}\"\` en ${{ matrix.values }}."
+              echo "⚠️ Falta la App (variable AIP_APP_ID o secret AIP_APP_PRIVATE_KEY): actualiza \`tag: \"${{ steps.meta.outputs.tag }}\"\` en ${{ matrix.values }}."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
