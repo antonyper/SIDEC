@@ -36,9 +36,11 @@ apps ArgoCD del proyecto `bifrost-next-dev` sobre el chart común `bifrost-app-c
 
 1. Merge de los cambios de `argocd_application` (crea ECR, rol, secretos, DNS y apps) y de
    `helm_charts` (values). La base arranca enseguida; backend y frontend quedan esperando imagen.
-2. En este repo: variable `SIDEC_ECR_ROLE_ARN` = output `sidec_github_role_arn` de Terraform, y
-   secret `PAT_TOKEN` (token con permiso de `repository_dispatch` en `Bifrost3-0/helm_charts`, el
-   mismo de IAProjects).
+2. En este repo: variable `SIDEC_ECR_ROLE_ARN` = output `sidec_github_role_arn` de Terraform, variable
+   `AIP_APP_ID` = `5669545` y secret `AIP_APP_PRIVATE_KEY` con la clave `.pem` de la GitHub App
+   `aip-bifrost-agentes`. Cada ejecución pide a la App un token de 1 hora solo para
+   `Bifrost3-0/helm_charts`: no hay token personal permanente (el 08/11 un PAT sin acceso a
+   `helm_charts` dejó SIDEC sin desplegar).
 3. Merge a `main`: el CI publica las imágenes y actualiza los tags; ArgoCD despliega.
 
 ## Acceso de la persona que prueba
