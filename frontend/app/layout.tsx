@@ -4,7 +4,7 @@ import AppShell from "@/components/layout/AppShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIDEC",
+  title: "SIDEC — validación",
   description: "Sistema de distribución y consignación",
   applicationName: "SIDEC",
   appleWebApp: { capable: true, title: "SIDEC" },
