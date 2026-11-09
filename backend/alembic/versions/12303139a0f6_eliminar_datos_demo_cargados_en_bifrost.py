@@ -13,8 +13,8 @@ reales de otra base que reutilice esos mismos ids o esos mismos nombres.
 """
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 revision: str = "12303139a0f6"

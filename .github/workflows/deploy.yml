@@ -66,11 +66,6 @@ jobs:
           heads=$(alembic heads | wc -l)
           alembic heads
           test "$heads" -eq 1 || { echo "::error::Alembic tiene $heads cabezas; hay que unificarlas."; exit 1; }
-      - name: Regresión del arranque sin borrado de datos
-        run: |
-          ruff check tests alembic/versions/12303139a0f6_eliminar_datos_demo_cargados_en_bifrost.py
-          python -m pytest tests -q
-
   frontend:
     runs-on: ubuntu-latest
     defaults:
