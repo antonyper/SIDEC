@@ -10,6 +10,10 @@ inventario ligados directo al producto (no solo a sus guías), que era lo que ro
 borrado por una FK. Productos/agencias se identifican por (id, nombre) exactos del seed
 conocido, no solo por nombre ni solo por id, para no coincidir por accidente con datos
 reales de otra base que reutilice esos mismos ids o esos mismos nombres.
+
+Reintento de despliegue (2026-11-15): el commit anterior (96fe71b) nunca se reflejó en
+Bifrost, los datos demo seguían presentes. Este cambio no toca la lógica de arriba, solo
+fuerza un commit nuevo para disparar otro build + repository_dispatch a helm_charts.
 """
 from collections.abc import Sequence
 
